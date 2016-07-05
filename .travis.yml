@@ -21,10 +21,9 @@ addons:
   apt:
     sources:
      - ubuntu-toolchain-r-test
-     - llvm-toolchain-precise-3.5
     packages:
-     - clang-3.5
-     - llvm-3.5-dev
+     - libstdc++6
+     - libstdc++-5-dev
 
 cache:
   directories:
@@ -63,24 +62,28 @@ matrix:
 env:
   global:
    - JOBS: 8
+   - CLANG_VERSION: "3.8.0"
    - secure: Ac0sNxaMmm/4NLJwjB5W74wNNrXH2cFz4qADJSJwGr+p78NVrp+3B70Nlffg6sf6sq57KeoQi5EbUNSa4fjLS2FqJJDr5U8cOA4nt5tPGm8cucdAyr4VCREEddtV4jfIcNN0/I/DKIK4d744SmpqomVYqTUFOVK8LOT4vAX3tTo=
    - secure: bsD0VyN6F6+ratG/C2AB1GrbmaPGyvaAgjZXd7tsQPYl+TR3BT643T9GikgN5IJdbjVBOJDfSqk76g/UlfLl9bRnoybP8tJsZJhCyMYKyRNGJZBIOyEVe6j5FrcT5ejBO0EIGaw2fXwSkG92pg7CFQOAPkVNgcl/H0XNdMa3Q/8=
 
 before_install:
 - scripts/validate_tag.sh
-- if [[ $(uname -s) == 'Linux' ]]; then
-     export CXX="ccache clang++-3.5 -Qunused-arguments";
-     export CC="ccache clang-3.5 -Qunused-arguments";
-     export PYTHONPATH=$(pwd)/mason_packages/.link/lib/python2.7/site-packages;
-   else
-     export PYTHONPATH=$(pwd)/mason_packages/.link/lib/python/site-packages;
-   fi;
 - if [[ $(uname -s) == 'Darwin' ]]; then brew uninstall --force node; fi;
 - source ./scripts/install_node.sh ${NODE_VERSION}
 
 install:
 - source ./bootstrap.sh
-- git clone --depth=1 --branch=$(node -e "console.log(require('./package.json').libosmium_version)") https://github.com/osmcode/libosmium.git ../libosmium
+- if [[ $(uname -s) == 'Linux' ]]; then
+     ./.mason/mason install clang ${CLANG_VERSION};
+     export PATH=$(./.mason/mason prefix clang ${CLANG_VERSION})/bin:${PATH};
+     export CXX="ccache clang++ -Qunused-arguments";
+     export CC="ccache clang -Qunused-arguments";
+     $CXX --version
+     export PYTHONPATH=$(pwd)/mason_packages/.link/lib/python2.7/site-packages;
+   else
+     export PYTHONPATH=$(pwd)/mason_packages/.link/lib/python/site-packages;
+   fi;
+- git clone --depth=1 --branch=v$(node -e "console.log(require('./package.json').libosmium_version)") https://github.com/osmcode/libosmium.git ../libosmium
 
 before_script:
 - if [[ ${COVERAGE} == true ]]; then
